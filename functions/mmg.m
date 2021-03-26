@@ -8,8 +8,9 @@ mmgWriteMesh(mesh, meshfile);
 mmgWriteSol(sol, solfile);
 
 mpath = fileparts(mfilename('fullpath'));
-[status,cmdout] = system(sprintf('%s/../dependencies/mmg/build/bin/mmg3d_O3 %s %s -sol %s %s', mpath, meshfile, meshfile, solfile, paramString));
-
+%keyboard
+[status,cmdout] = system(sprintf('"%s/../dependencies/mmg/build/bin/mmg3d_O3" %s %s -sol %s %s', mpath, meshfile, meshfile, solfile, paramString));
+keyboard
 mesh = struct();
 if status==0
     mesh = mmgReadMesh(meshfile);

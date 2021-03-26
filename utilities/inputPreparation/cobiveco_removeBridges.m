@@ -79,6 +79,7 @@ vol.pointData.dist = dist;
 %%
 if remesh
     meanEdgLen = mean(vtkEdgeLengths(vol));
+    %keyboard
     [vol,mmgStatus,mmgOutput] = mmg(vol, dist, sprintf('-ls %1.5e -nr -hausd %1.5e -hmin %1.5e -hmax %1.5e', el, mmgSizingParam(:)'*meanEdgLen));
     if mmgStatus ~=0
         warning('Mmg remeshing failed (system command status %i).', mmgStatus);
