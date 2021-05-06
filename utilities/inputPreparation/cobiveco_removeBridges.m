@@ -19,7 +19,6 @@ mmgSizingParam = [0.1 0.9 1.1];
 
 %%
 s = vtkLoopSubdivisionFilter(sur, numSubdiv);
-s.points = double(s.points);
 
 if strcmp(ventricles, 'lv')
     endo = vtkThreshold(s, 'points', 'class', [3 3]);
@@ -42,7 +41,9 @@ d = 2*max(d-0.5, 0);
 edges = vtkFeatureEdges(endo, 1, 0, 0, 0, 0);
 idsEdges = vtkMapPointIds(s, edges);
 
-L = massmatrix(s.points, s.cells) \ cotmatrix(s.points, s.cells);
+P = double(s.points);
+C = double(s.cells);
+L = massmatrix(P,C) \ cotmatrix(P,C);
 LL = (L'*L);
 I = speye(size(L));
 
@@ -79,11 +80,20 @@ vol.pointData.dist = dist;
 %%
 if remesh
     meanEdgLen = mean(vtkEdgeLengths(vol));
-    %keyboard
-    [vol,mmgStatus,mmgOutput] = mmg(vol, dist, sprintf('-ls %1.5e -nr -hausd %1.5e -hmin %1.5e -hmax %1.5e', el, mmgSizingParam(:)'*meanEdgLen));
-    if mmgStatus ~=0
-        warning('Mmg remeshing failed (system command status %i).', mmgStatus);
-        return;
+    isovalue = el;
+    numTries = 5;
+    for i = 1:numTries
+        [vol,mmgStatus,mmgOutput] = mmg(vol, dist, sprintf('-ls %1.5e -nr -hausd %1.5e -hmin %1.5e -hmax %1.5e', el, mmgSizingParam(:)'*meanEdgLen));
+        if mmgStatus == 0
+            break;
+        elseif i < numTries
+            warning('Mmg remeshing with an isovalue of %.3f failed (system command status %i). Trying again with a slightly larger isovalue.', isovalue, mmgStatus);
+            isovalue = isovalue + 0.1*el;
+            mmgSizingParam(1) = 0.8*mmgSizingParam(1);
+        else
+            warning('Mmg remeshing failed ultimately after trying %i different isovalues (system command status %i).', numTries, mmgStatus);
+            return;
+        end
     end
     vol = vtkThreshold(vol, 'cells', 'class', [2 2]);
     vol = vtkConnectivityFilter(vtkDeleteDataArrays(vol));
